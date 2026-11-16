@@ -1,0 +1,1 @@
+# 此目录由容器挂载为卷，存放 substation.db（SQLite 持久化数据）。

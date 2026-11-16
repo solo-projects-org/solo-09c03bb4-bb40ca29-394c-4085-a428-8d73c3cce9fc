@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>变电站逐小时电量质检系统</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<header>
+  <h1>变电站逐小时电量质检系统</h1>
+  <p class="subtitle">时间均为 UTC 整点 · 配置整版提交 · 读数修订递增 · 追溯变更自动失效旧日报</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="config">计量点配置</button>
+  <button class="tab" data-tab="reading">电量录入</button>
+  <button class="tab" data-tab="report">质检日报</button>
+</nav>
+
+<main>
+  <!-- ================= 配置 ================= -->
+  <section id="tab-config" class="tab-panel active">
+    <h2>整版提交计量点配置</h2>
+    <p class="hint">一次提交即该生效小时的完整配置（全量替换语义）；同一计量点不得同时兼任进线与出线，至少各一个。</p>
+    <form id="config-form">
+      <label>生效 UTC 小时（整点）
+        <input type="datetime" name="effective_hour" placeholder="2026-11-15T08:00:00Z" required />
+      </label>
+      <table class="grid">
+        <thead><tr><th>计量点编号</th><th>角色</th><th></th></tr></thead>
+        <tbody id="config-rows"></tbody>
+      </table>
+      <div class="row-actions">
+        <button type="button" id="config-add">＋ 增加计量点</button>
+        <button type="submit" class="primary">提交配置</button>
+      </div>
+    </form>
+    <h3>已提交配置版本</h3>
+    <div id="config-list" class="list"></div>
+  </section>
+
+  <!-- ================= 读数 ================= -->
+  <section id="tab-reading" class="tab-panel">
+    <h2>录入逐小时电量</h2>
+    <p class="hint">电量必须非负；同一计量点同一小时的修订号必须递增（从 1 开始）。同修订号异文、旧修订号一律拒收。</p>
+    <form id="reading-form">
+      <table class="grid">
+        <thead><tr><th>计量点编号</th><th>UTC 小时</th><th>修订号</th><th>电量</th><th></th></tr></thead>
+        <tbody id="reading-rows"></tbody>
+      </table>
+      <div class="row-actions">
+        <button type="button" id="reading-add">＋ 增加一行</button>
+        <button type="submit" class="primary">提交读数</button>
+      </div>
+    </form>
+    <h3>已提交读数</h3>
+    <div class="filters">
+      <input type="text" id="reading-filter-point" placeholder="按计量点过滤" />
+      <input type="text" id="reading-filter-hour" placeholder="按小时过滤，如 2026-11-15T08:00:00Z" />
+      <button type="button" id="reading-refresh">刷新</button>
+    </div>
+    <div id="reading-list" class="list"></div>
+  </section>
+
+  <!-- ================= 日报 ================= -->
+  <section id="tab-report" class="tab-panel">
+    <h2>生成质检日报</h2>
+    <p class="hint">每小时按当时生效配置取各计量点最新修订读数；缺配置或缺点标记不完整；齐全时进线减出线绝对差超过容差标记异常。</p>
+    <form id="report-form" class="report-form">
+      <label>日期（UTC）
+        <input type="date" name="report_date" required />
+      </label>
+      <label>容差（非负数）
+        <input type="number" name="tolerance" step="any" min="0" value="0" required />
+      </label>
+      <button type="submit" class="primary">生成 / 取回日报</button>
+    </form>
+    <h3>日报列表</h3>
+    <div class="filters">
+      <input type="text" id="report-filter-date" placeholder="按日期过滤 YYYY-MM-DD" />
+      <label class="check"><input type="checkbox" id="report-include-invalid" checked /> 包含已失效</label>
+      <button type="button" id="report-refresh">刷新</button>
+    </div>
+    <div id="report-list" class="list"></div>
+    <div id="report-detail"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
