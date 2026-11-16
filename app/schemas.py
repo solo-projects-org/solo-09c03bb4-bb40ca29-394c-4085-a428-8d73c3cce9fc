@@ -58,6 +58,16 @@ def hours_of_day(date_str: str) -> list[str]:
     return [d.replace(hour=h).strftime("%Y-%m-%dT%H:%M:%SZ") for h in range(24)]
 
 
+def shift_hour(hour: str, delta_hours: int) -> str:
+    """UTC 整点加减若干小时，返回规范整点字符串。"""
+    d = datetime.strptime(validate_hour(hour), "%Y-%m-%dT%H:%M:%SZ").replace(
+        tzinfo=timezone.utc
+    )
+    from datetime import timedelta
+
+    return (d + timedelta(hours=delta_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 class PointItem(BaseModel):
     point_id: str = Field(min_length=1, max_length=64)
     role: str

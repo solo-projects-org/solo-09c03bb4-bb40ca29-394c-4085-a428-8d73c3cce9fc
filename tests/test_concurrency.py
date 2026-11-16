@@ -8,7 +8,6 @@ SQLite 单写锁 + WAL 使写事务串行；这里用线程制造真实交错，
 import threading
 from datetime import datetime, timezone
 
-import pytest
 
 from app import db as db_module
 from app import services

@@ -150,3 +150,38 @@ table.detail th { background: #eef2f8; }
 }
 .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+/* 累计抄码导入 */
+input[type="file"] {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px dashed #cbd2dc;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+}
+.import-form {
+  display: flex;
+  gap: 18px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.import-result { margin: 12px 0 6px; }
+.import-summary .meta { word-break: break-all; }
+code.sha { word-break: break-all; font-size: 11px; }
+.trace { margin-top: 3px; word-break: break-all; }
+h4 { font-size: 13px; margin: 16px 0 6px; color: #374151; }
+.error-banner { border-left-color: #b91c1c; background: #fee2e2; color: #7f1d1d; }
+a.button-link {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid #123b6d;
+  border-radius: 6px;
+  color: #123b6d;
+  font-size: 13px;
+  text-decoration: none;
+  background: #fff;
+}
+a.button-link:hover { background: #eef2f8; }

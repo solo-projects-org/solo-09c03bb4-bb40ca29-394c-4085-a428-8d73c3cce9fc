@@ -7,6 +7,31 @@ services:
       - "8000:8000"
     volumes:
       - substation-data:/app/data
+    environment:
+      # 启动时核验所有被引用原件的 SHA-256；失败则拒绝启动（防止“读数可用但无原件”）
+      SUBSTATION_VERIFY_ORIGINALS_ON_START: "1"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # 可选第二实例：docker compose --profile ha up -d
+  # 与主实例共享同一数据卷（SQLite WAL + BEGIN IMMEDIATE 串行化写入），
+  # 用于演示两个实例并发补传/重试时仍保持整批一致。
+  substation-qc-2:
+    profiles: ["ha"]
+    build: .
+    image: substation-qc:1.0.0
+    container_name: substation-qc-2
+    ports:
+      - "8001:8000"
+    volumes:
+      - substation-data:/app/data
+    environment:
+      SUBSTATION_VERIFY_ORIGINALS_ON_START: "1"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status==200 else 1)"]

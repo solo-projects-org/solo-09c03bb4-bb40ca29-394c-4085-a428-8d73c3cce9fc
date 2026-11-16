@@ -77,7 +77,9 @@ def _config_at(conn: sqlite3.Connection, hour: str) -> dict[str, Any] | None:
 def _latest_reading(conn: sqlite3.Connection, point_id: str, hour: str) -> dict[str, Any] | None:
     row = conn.execute(
         """
-        SELECT point_id, hour, revision, energy, created_at
+        SELECT point_id, hour, revision, energy, created_at, source,
+               start_batch_id, start_line_no, start_cumulative_kwh,
+               end_batch_id, end_line_no, end_cumulative_kwh
         FROM reading
         WHERE point_id=? AND hour=?
         ORDER BY revision DESC LIMIT 1
@@ -87,6 +89,24 @@ def _latest_reading(conn: sqlite3.Connection, point_id: str, hour: str) -> dict[
     if row is None:
         return None
     return dict(row)
+
+
+def _reading_basis(reading: dict[str, Any]) -> str:
+    """人工读数引用修订与提交时刻；派生读数额外引用两端示数/批次/行号。"""
+    pid, hour = reading["point_id"], reading["hour"]
+    head = (
+        f"reading {pid}@{hour} rev{reading['revision']} "
+        f"submitted_at {reading['created_at']}"
+    )
+    if reading.get("source") != "derived":
+        return head
+    return (
+        f"{head} derived_from {pid}@{hour} cumulative "
+        f"{reading['start_cumulative_kwh']} (batch {reading['start_batch_id']} "
+        f"line {reading['start_line_no']}) -> "
+        f"{reading['end_cumulative_kwh']} (batch {reading['end_batch_id']} "
+        f"line {reading['end_line_no']})"
+    )
 
 
 def _invalidate_reports_for_hours(
@@ -416,10 +436,8 @@ def generate_report(payload: dict[str, Any], db_path: str | None = None) -> dict
                     "role": next(p["role"] for p in cfg["points"] if p["point_id"] == pid),
                     "energy": readings_hour[pid]["energy"],
                     "revision": readings_hour[pid]["revision"],
-                    "basis": (
-                        f"reading {pid}@{hour} rev{readings_hour[pid]['revision']} "
-                        f"submitted_at {readings_hour[pid]['created_at']}"
-                    ),
+                    "source": readings_hour[pid]["source"],
+                    "basis": _reading_basis(readings_hour[pid]),
                 }
                 if pid in readings_hour else
                 {"point_id": pid, "role": (
@@ -554,8 +572,12 @@ def list_readings(
 ) -> list[dict[str, Any]]:
     conn = connect(db_path)
     try:
-        sql = ("SELECT point_id, hour, revision, energy, created_at "
-               "FROM reading WHERE 1=1")
+        sql = (
+            "SELECT point_id, hour, revision, energy, created_at, source, "
+            "start_batch_id, start_line_no, start_cumulative_kwh, "
+            "end_batch_id, end_line_no, end_cumulative_kwh "
+            "FROM reading WHERE 1=1"
+        )
         params: list[Any] = []
         if point_id:
             sql += " AND point_id=?"
@@ -564,6 +586,9 @@ def list_readings(
             sql += " AND hour=?"
             params.append(validate_hour(hour))
         sql += " ORDER BY hour DESC, point_id, revision DESC"
-        return [dict(r) for r in conn.execute(sql, params).fetchall()]
+        rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
+        for r in rows:
+            r["basis"] = _reading_basis(r)
+        return rows
     finally:
         conn.close()
